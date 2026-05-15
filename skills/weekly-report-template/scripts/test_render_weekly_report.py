@@ -26,9 +26,12 @@ class RenderWeeklyReportTest(unittest.TestCase):
             }
         )
 
-        self.assertIn("本周总体工单36个", result["html_body"])
-        self.assertIn("工单平台产生8个", result["html_body"])
-        self.assertIn("用户反馈28个", result["html_body"])
+        self.assertIn("本周总结", result["html_body"])
+        self.assertIn("本周客户服务共处理", result["html_body"])
+        self.assertIn("总工单：36", result["html_body"])
+        self.assertIn("工单平台产生", result["html_body"])
+        self.assertIn("工单平台：8", result["html_body"])
+        self.assertIn("消息平台：28", result["html_body"])
         self.assertIn("团队: 客户服务", result["text_preview"])
 
     def test_escapes_user_supplied_html(self) -> None:

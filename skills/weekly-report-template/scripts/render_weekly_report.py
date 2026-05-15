@@ -201,7 +201,7 @@ def count_items(items: Any) -> list[tuple[str, int]]:
 def render_metric_card(label: str, value: str, color: str = "#075985") -> str:
     return (
         '<td style="width:25%;padding:0 6px 12px 0;vertical-align:top;">'
-        '<div style="background:#f8fbff;border:1px solid #dce8f7;border-radius:14px;padding:14px 16px;">'
+        '<div style="background:#fffaf5;border:1px solid #fed7aa;border-radius:14px;padding:14px 16px;">'
         f'<div style="font-size:12px;color:#6b7280;margin-bottom:8px;">{esc(label)}</div>'
         f'<div style="font-size:30px;font-weight:800;line-height:1.15;color:{color};">{esc(value)}</div>'
         '</div>'
@@ -220,8 +220,8 @@ def render_issue_rows(issue_counts: list[tuple[str, int]]) -> str:
             '<tr>'
             f'<td style="width:100px;padding:7px 10px 7px 0;font-size:13px;color:#334155;line-height:1.4;">{esc(label)}</td>'
             '<td style="padding:7px 10px 7px 0;">'
-            '<div style="height:11px;background:#d9ebff;border-radius:999px;overflow:hidden;">'
-            f'<div style="width:{width}%;height:11px;background:#3b82d6;border-radius:999px;"></div>'
+            '<div style="height:11px;background:#fed7aa;border-radius:999px;overflow:hidden;">'
+            f'<div style="width:{width}%;height:11px;background:#f97316;border-radius:999px;"></div>'
             '</div>'
             '</td>'
             f'<td style="width:28px;padding:7px 0;text-align:right;font-size:13px;font-weight:700;color:#0f172a;">{count}</td>'
@@ -237,8 +237,8 @@ def render_issue_rows(issue_counts: list[tuple[str, int]]) -> str:
 def render_project_chips(project_counts: list[tuple[str, int]]) -> str:
     if not project_counts:
         return '<div style="font-size:14px;color:#6b7280;">暂无飞书项目提交数据。</div>'
-    palette = ["#e0f2fe", "#fff7ed", "#f0fdf4", "#fffbeb", "#fef2f2", "#eef2ff", "#f5f3ff", "#ecfdf5"]
-    text_palette = ["#0369a1", "#c2410c", "#15803d", "#b45309", "#b91c1c", "#3730a3", "#6d28d9", "#047857"]
+    palette = ["#ffedd5", "#fef3c7", "#ecfdf5", "#fff7ed", "#fff1f2", "#f5f3ff", "#ecfeff", "#fef2f2"]
+    text_palette = ["#c2410c", "#b45309", "#047857", "#9a3412", "#be123c", "#6d28d9", "#0e7490", "#b91c1c"]
     chips = []
     for idx, (label, count) in enumerate(project_counts[:10]):
         chips.append(
@@ -249,7 +249,7 @@ def render_project_chips(project_counts: list[tuple[str, int]]) -> str:
     total = sum(count for _, count in project_counts)
     return (
         f'<div style="margin:0 0 12px;font-size:14px;color:#475569;">本周共提交 '
-        f'<strong style="font-size:24px;color:#075985;">{total}</strong> 个飞书项目。</div>'
+        f'<strong style="font-size:24px;color:#d35400;">{total}</strong> 个飞书项目。</div>'
         + ''.join(chips)
     )
 
@@ -263,23 +263,23 @@ def render_dashboard_chart(chart: dict[str, Any], overall_summary: dict[str, Any
     issue_counts = count_items(chart.get("issue_type_counts"))
     project_counts = count_items(chart.get("feishu_project_counts"))
     return (
-        '<div style="background:#eaf6ff;border-radius:16px;padding:18px 18px 20px;margin:0;">'
+        '<div style="background:#fff7ed;border-radius:16px;padding:18px 18px 20px;margin:0;">'
         f'<div style="font-size:22px;font-weight:800;color:#172033;margin:0 0 2px;">2026年周客户服务统计看板</div>'
-        f'<div style="font-size:13px;color:#2f70aa;margin:0 0 18px;">{esc(period)}</div>'
+        f'<div style="font-size:13px;color:#c2410c;margin:0 0 18px;">{esc(period)}</div>'
         '<table role="presentation" cellspacing="0" cellpadding="0" border="0" style="border-collapse:collapse;width:100%;">'
         '<tr>'
-        f'{render_metric_card("总工单数", total)}'
-        f'{render_metric_card("跟进中/待回复", pending, "#1726a0")}'
+        f'{render_metric_card("总工单数", total, "#d35400")}'
+        f'{render_metric_card("跟进中/待回复", pending, "#ea580c")}'
         f'{render_metric_card("已关闭", closed, "#1fb400")}'
         f'{render_metric_card("透传率", rate, "#172033")}'
         '</tr>'
         '</table>'
-        '<div style="background:#bfdbfe;border-radius:14px;padding:16px 18px;margin:4px 0 14px;">'
-        '<div style="font-size:17px;font-weight:800;color:#0e4e94;margin:0 0 12px;">本周 CSM 处理各类问题工单数</div>'
+        '<div style="background:#ffedd5;border-radius:14px;padding:16px 18px;margin:4px 0 14px;">'
+        '<div style="font-size:17px;font-weight:800;color:#c2410c;margin:0 0 12px;">本周 CSM 处理各类问题工单数</div>'
         f'{render_issue_rows(issue_counts)}'
         '</div>'
-        '<div style="background:#bfdbfe;border-radius:14px;padding:16px 18px;">'
-        '<div style="font-size:17px;font-weight:800;color:#0e4e94;margin:0 0 12px;">本周提交飞书项目数</div>'
+        '<div style="background:#ffedd5;border-radius:14px;padding:16px 18px;">'
+        '<div style="font-size:17px;font-weight:800;color:#c2410c;margin:0 0 12px;">本周提交飞书项目数</div>'
         f'{render_project_chips(project_counts)}'
         '</div>'
         '</div>'
@@ -322,8 +322,33 @@ def plain_overall_summary(summary: dict[str, Any]) -> str:
     if message_feedback is None:
         message_feedback = max(total - ticket_platform, 0)
     return (
-        f"本周总体工单{format_int(total)}个，总体透传率 {format_rate(summary.get('pass_through_rate'))}。"
-        f"其中，工单平台产生{format_int(ticket_platform)}个，各消息平台用户反馈{format_int(message_feedback)}个。"
+        f"本周客户服务共处理{format_int(total)}个反馈事项，整体透传率 {format_rate(summary.get('pass_through_rate'))}；"
+        f"其中工单平台产生{format_int(ticket_platform)}个，各消息平台反馈{format_int(message_feedback)}个。"
+    )
+
+
+def render_summary_block(summary: dict[str, Any]) -> str:
+    total = int(parse_number(summary.get("total_tickets", 0)))
+    ticket_platform = int(parse_number(summary.get("ticket_platform_count", 0)))
+    message_feedback = summary.get("message_platform_feedback_count")
+    if message_feedback is None:
+        message_feedback = max(total - ticket_platform, 0)
+    rate = format_rate(summary.get("pass_through_rate"))
+    return (
+        '<div style="margin:0;padding:16px;background:#fffaf5;border:1px solid #fed7aa;border-radius:14px;">'
+        '<div style="font-size:14px;line-height:1.8;color:#334155;margin-bottom:14px;">'
+        f'本周客户服务共处理 <strong style="color:#d35400;">{format_int(total)}</strong> 个反馈事项，整体透传率 '
+        f'<strong style="color:#9a3412;">{esc(rate)}</strong>；其中工单平台产生 '
+        f'<strong style="color:#ea580c;">{format_int(ticket_platform)}</strong> 个，各消息平台反馈 '
+        f'<strong style="color:#ea580c;">{format_int(message_feedback)}</strong> 个。'
+        '</div>'
+        '<div>'
+        f'<span style="display:inline-block;margin:0 8px 10px 0;padding:9px 13px;border-radius:999px;background:#ffedd5;color:#c2410c;font-size:14px;font-weight:700;">总工单：{format_int(total)}</span>'
+        f'<span style="display:inline-block;margin:0 8px 10px 0;padding:9px 13px;border-radius:999px;background:#fff7ed;color:#9a3412;font-size:14px;font-weight:700;">透传率：{esc(rate)}</span>'
+        f'<span style="display:inline-block;margin:0 8px 10px 0;padding:9px 13px;border-radius:999px;background:#fef3c7;color:#b45309;font-size:14px;font-weight:700;">工单平台：{format_int(ticket_platform)}</span>'
+        f'<span style="display:inline-block;margin:0 8px 10px 0;padding:9px 13px;border-radius:999px;background:#ecfdf5;color:#047857;font-size:14px;font-weight:700;">消息平台：{format_int(message_feedback)}</span>'
+        '</div>'
+        '</div>'
     )
 
 
@@ -334,7 +359,7 @@ def render_priority_cards(priority_section: dict[str, Any] | None) -> str:
     priority_items = [item for item in items if isinstance(item, dict)]
     if not priority_items:
         return (
-            '<div style="padding:14px 16px;background:#f8fbff;border:1px solid #dce8f7;'
+            '<div style="padding:14px 16px;background:#fffaf5;border:1px solid #fed7aa;'
             'border-radius:12px;font-size:14px;line-height:1.8;color:#4b5563;">暂无重点问题。</div>'
         )
     cards = []
@@ -374,7 +399,7 @@ def render_detail_footer(payload: dict[str, Any]) -> str:
         return ""
     return (
         '<div style="padding:28px 32px 34px;">'
-        f'<a href="{esc(url)}" style="display:inline-block;padding:12px 18px;background:#1557c8;'
+        f'<a href="{esc(url)}" style="display:inline-block;padding:12px 18px;background:#ea580c;'
         f'color:#ffffff !important;text-decoration:none;border-radius:10px;font-size:14px;font-weight:700;">{esc(label)}</a>'
         '</div>'
     )
@@ -398,14 +423,14 @@ def render(payload: dict[str, Any]) -> dict[str, str]:
     remaining_sections = [section for section in sections if section is not priority_section]
 
     body_sections = [
-        '<div style="background:linear-gradient(135deg,#0f4fbf 0%,#2f7cf4 100%);color:#ffffff;padding:28px 32px 24px;">'
+        '<div style="background:linear-gradient(135deg,#c2410c 0%,#f97316 58%,#fb923c 100%);color:#ffffff;padding:28px 32px 24px;">'
         '<div style="font-size:12px;letter-spacing:0.08em;text-transform:uppercase;opacity:0.84;margin-bottom:10px;">WEEKLY BRIEF</div>'
         '<h1 style="margin:0 0 10px;font-size:28px;line-height:1.2;font-weight:700;">工单和客户反馈统计周报</h1>'
         '<p style="margin:0;font-size:14px;line-height:1.7;color:rgba(255,255,255,0.92);">'
         '本周客户服务工单与各消息平台反馈已汇总如下；本邮件保留需要优先关注的总体情况、重点问题和问题分布。'
         '</p>'
         '</div>',
-        '<div style="background:#f8fbff;border-bottom:1px solid #e5edf6;padding:18px 32px;'
+        '<div style="background:#fffaf5;border-bottom:1px solid #fed7aa;padding:18px 32px;'
         'font-size:13px;line-height:1.9;color:#4b5563;">'
         f'<strong style="color:#0f172a;">统计周期：</strong>{esc(period)}<br>'
         f'<strong style="color:#0f172a;">生成时间：</strong>{esc(generated_time_label(payload))}'
@@ -415,13 +440,12 @@ def render(payload: dict[str, Any]) -> dict[str, str]:
     if isinstance(overall_summary, dict):
         body_sections.append(
             render_section_shell(
-                "一眼结论",
-                '<div style="margin:0;padding:14px 16px;background:#f8fbff;border:1px solid #dce8f7;'
-                f'border-radius:12px;font-size:15px;line-height:1.9;color:#111827;">{esc(plain_overall_summary(overall_summary))}</div>',
+                "本周总结",
+                render_summary_block(overall_summary),
             )
         )
     elif isinstance(priority_section, dict):
-        body_sections.append(render_section_shell("一眼结论", '<div style="font-size:14px;color:#4b5563;">暂无总体统计。</div>'))
+        body_sections.append(render_section_shell("本周总结", '<div style="font-size:14px;color:#4b5563;">暂无总体统计。</div>'))
 
     body_sections.append(render_section_shell("重点问题", render_priority_cards(priority_section if isinstance(priority_section, dict) else None)))
 
@@ -446,8 +470,8 @@ def render(payload: dict[str, Any]) -> dict[str, str]:
         rendered_sections = render_section({"title": "Updates", "items": []})
 
     author_html = f"<p style=\"color:#666;\">Compiled by {esc(author)}</p>" if author else ""
-    html_body = f"""<div style="margin:0;padding:28px 16px;background:#f3f6fb;font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei',Arial,sans-serif;color:#1f2937;">
-<div style="max-width:760px;margin:0 auto;background:#ffffff;border:1px solid #dbe5f0;border-radius:18px;overflow:hidden;box-shadow:0 12px 36px rgba(15,23,42,0.08);">
+    html_body = f"""<div style="margin:0;padding:28px 16px;background:#fff7ed;font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei',Arial,sans-serif;color:#1f2937;">
+<div style="max-width:760px;margin:0 auto;background:#ffffff;border:1px solid #fed7aa;border-radius:18px;overflow:hidden;box-shadow:0 12px 36px rgba(154,52,18,0.10);">
 {author_html}
 {rendered_sections}
 </div>
