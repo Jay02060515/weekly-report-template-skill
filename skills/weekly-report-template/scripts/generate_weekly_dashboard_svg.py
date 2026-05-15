@@ -104,7 +104,7 @@ def render_svg(payload: dict[str, Any]) -> str:
     rate = percent_label(overall.get("pass_through_rate"))
 
     max_count = max([count for _, count in issue_counts] or [1])
-    y_top = 404
+    y_top = 424
     y_bottom = 704
     plot_height = y_bottom - y_top
     bar_gap = 28
@@ -199,8 +199,7 @@ def render_svg(payload: dict[str, Any]) -> str:
 
   <rect class="panel" x="42" y="318" width="910" height="482" rx="24"/>
   <text class="h2" x="74" y="368">本周 CSM 处理各类问题工单数</text>
-  <circle cx="82" cy="402" r="6" fill="#438ede"/>
-  <text class="small" x="100" y="408">数量</text>
+  <text class="small" x="64" y="400">数量</text>
   {''.join(grid)}
   {''.join(bars)}
   <text class="small" x="433" y="786">问题类型</text>
