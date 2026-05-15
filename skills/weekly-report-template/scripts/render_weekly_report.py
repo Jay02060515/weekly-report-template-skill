@@ -184,6 +184,19 @@ def render_dashboard_screenshot(screenshot: dict[str, Any]) -> str:
     )
 
 
+def render_dashboard_chart(chart: dict[str, Any]) -> str:
+    path = text(chart.get("path"))
+    if not path:
+        return ""
+    alt = text(chart.get("alt"), "Weekly customer-service dashboard")
+    return (
+        "<p>"
+        f"<img src=\"{esc(path)}\" alt=\"{esc(alt)}\" "
+        "style=\"max-width:100%;height:auto;border:0;\" />"
+        "</p>"
+    )
+
+
 def render_image_placeholder(value: Any) -> str:
     if value is False or value is None:
         return ""
@@ -214,6 +227,7 @@ def render(payload: dict[str, Any]) -> dict[str, str]:
     if not isinstance(sections, list):
         sections = []
     overall_summary = payload.get("overall_summary")
+    dashboard_chart = payload.get("dashboard_chart")
     dashboard_screenshot = payload.get("dashboard_screenshot")
     image_placeholder = payload.get("image_placeholder")
 
@@ -226,7 +240,11 @@ def render(payload: dict[str, Any]) -> dict[str, str]:
         body_sections.append(render_overall_block(overall_summary, priority_section if isinstance(priority_section, dict) else None))
     elif isinstance(priority_section, dict):
         body_sections.append(render_section(priority_section))
-    if isinstance(dashboard_screenshot, dict):
+    if isinstance(dashboard_chart, dict):
+        chart_html = render_dashboard_chart(dashboard_chart)
+        if chart_html:
+            body_sections.append(chart_html)
+    elif isinstance(dashboard_screenshot, dict):
         screenshot_html = render_dashboard_screenshot(dashboard_screenshot)
         if screenshot_html:
             body_sections.append(screenshot_html)
@@ -257,7 +275,9 @@ def render(payload: dict[str, Any]) -> dict[str, str]:
             f"{format_int(overall_summary.get('total_tickets'))} total, "
             f"{format_rate(overall_summary.get('pass_through_rate'))} pass-through"
         )
-    if isinstance(dashboard_screenshot, dict) and text(dashboard_screenshot.get("path")):
+    if isinstance(dashboard_chart, dict) and text(dashboard_chart.get("path")):
+        preview_lines.append(f"图表: {text(dashboard_chart.get('path'))}")
+    elif isinstance(dashboard_screenshot, dict) and text(dashboard_screenshot.get("path")):
         preview_lines.append(f"截图: {text(dashboard_screenshot.get('path'))}")
     elif image_placeholder is not None:
         preview_lines.append(f"图片: {text(image_placeholder, '图片位置')}")

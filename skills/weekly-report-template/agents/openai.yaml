@@ -1,4 +1,4 @@
 interface:
   display_name: "Weekly Report Template"
-  short_description: "Generate weekly report email templates from Lark Sheets and Base."
-  default_prompt: "Create a weekly report email template for this Monday-to-Friday workweek from the configured Lark Sheets and Base data, then show the subject and copy-ready body."
+  short_description: "Generate weekly report email templates from Lark Sheets/Base, with optional confirmed SMTP sending."
+  default_prompt: "Create a weekly report email template for this Monday-to-Friday workweek from the configured Lark Sheets and Base data, then show the subject and copy-ready body. Only send by SMTP if I explicitly confirm."

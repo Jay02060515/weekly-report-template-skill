@@ -84,6 +84,19 @@ class RenderWeeklyReportTest(unittest.TestCase):
         self.assertIn(f'<a href="{escaped_url}">{escaped_url}</a>', result["html_body"])
         self.assertIn("图片: 图片位置", result["text_preview"])
 
+    def test_renders_generated_dashboard_chart_before_placeholder(self) -> None:
+        result = render_weekly_report.render(
+            {
+                "date_range": "2026/05/11 ~ 2026/05/15",
+                "image_placeholder": "图片位置",
+                "dashboard_chart": {"path": "./weekly-dashboard.svg", "alt": "看板图"},
+            }
+        )
+
+        self.assertIn('<img src="./weekly-dashboard.svg" alt="看板图"', result["html_body"])
+        self.assertNotIn("<p>图片位置</p>", result["html_body"])
+        self.assertIn("图表: ./weekly-dashboard.svg", result["text_preview"])
+
 
 if __name__ == "__main__":
     unittest.main()

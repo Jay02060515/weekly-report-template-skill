@@ -3,3 +3,5 @@ tmp/
 scripts/__pycache__/
 *.pyc
 weekly-dashboard.png
+weekly-dashboard.svg
+artifacts/
