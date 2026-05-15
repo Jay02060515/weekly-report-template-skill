@@ -11,7 +11,9 @@ Create a weekly report email template from Feishu spreadsheet and Base data. Tre
 
 Default to content only: recipient suggestions when configured, subject, HTML body or copy-ready text body, generated dashboard chart, detail-data link, and assumptions. Do not open the user's mailbox or use browser automation.
 
-Optional SMTP sending is allowed only when the user explicitly asks to send and confirms the final recipient list, CC list, subject, and concise body preview. Always show the rendered email as a draft preview first. Follow `references/smtp-send-policy.md` and use `scripts/send_weekly_report_smtp.py`; never ask the user to paste SMTP passwords into chat and never store credentials in files.
+Default email design for this installation is a complete HTML weekly brief: blue gradient hero, metadata band, one-glance conclusion, priority-issue cards, a harmonious core-metrics section built with email-safe HTML/SVG elements, and a single CTA button for the Feishu detail-data link. Do not make the email body depend on a detached dashboard screenshot/image when rendering for SMTP; generated SVG files may remain as local preview or fallback artifacts.
+
+Optional SMTP sending is allowed only when the user explicitly asks to send and confirms the final recipient list, CC list, subject, and concise body preview. Follow `references/smtp-send-policy.md` and use `scripts/send_weekly_report_smtp.py`; never ask the user to paste SMTP passwords into chat and never store credentials in files.
 
 If the user asks to automate this workflow on a schedule, configure the automation to generate the weekly report template and report the content details by default. Configure scheduled SMTP sending only if the user explicitly asks for unattended sending and has already confirmed recipients, subject pattern, send policy, and credential setup.
 
@@ -29,8 +31,8 @@ If the user asks to automate this workflow on a schedule, configure the automati
 5. Generate the dashboard chart from current-week data. Follow `references/dashboard-chart-source.md`; count status and issue-type fields from the latest weekly view data, then run `scripts/generate_weekly_dashboard_svg.py`. The chart must omit the bottom customer-feedback detail table and the top-right Feishu support badge.
 6. Map source columns to the normalized weekly report model in `references/sheet-contract.md`, `references/overall-summary-source.md`, `references/priority-issues-source.md`, and `references/dashboard-chart-source.md`. If headers differ, infer obvious mappings and state assumptions; ask only when ambiguous fields would change recipients, scope, or meaning.
 7. Build a normalized JSON payload and render the email with `scripts/render_weekly_report.py`. Include `dashboard_chart.path` so the generated chart is embedded in the report body.
-8. Return the rendered template. Include the subject, copy-ready body, generated dashboard chart path, detail-data link, and a concise preview. Mention any missing rows, unmapped fields, or assumptions.
-9. If the user explicitly asks to send by SMTP, first show a draft preview: To, CC, BCC when present, subject, generated chart path, and a concise body preview. If required SMTP environment variables are missing, tell the user exactly which variables to set and stop before sending. After the user confirms, call `scripts/send_weekly_report_smtp.py` with `--confirm-send`.
+8. Return the rendered template. Include the subject, copy-ready body, generated dashboard chart path when one was generated, detail-data link/CTA, and a concise preview. Mention any missing rows, unmapped fields, or assumptions.
+9. If the user explicitly asks to send by SMTP, first show To, CC, BCC when present, subject, and a concise body preview. After the user confirms, call `scripts/send_weekly_report_smtp.py` with `--confirm-send`.
 
 ## Email Template Output
 
@@ -47,6 +49,8 @@ Rules:
 
 Read `references/smtp-send-policy.md` before sending.
 
+For local installations that provide `references/local-smtp-defaults.md`, read it for default non-secret sender and recipient values. This file is local-only and must not be published. Use those local defaults when the user asks for the standard weekly report without specifying recipients. For this machine, the standard flow is: generate the current workweek report from the default Feishu data sources, show the complete template with the default To/CC/BCC values, and send only after the user explicitly confirms.
+
 Required environment variables:
 
 ```text
@@ -54,18 +58,14 @@ ALIMAIL_SMTP_USER=<full email address>
 ALIMAIL_SMTP_PASSWORD=<third-party client security password>
 ```
 
+If `ALIMAIL_SMTP_PASSWORD` is absent, the SMTP sender may read the password from macOS Keychain item `ALIMAIL_SMTP_PASSWORD` for account `$USER`. Do not store the password in local defaults, payload JSON, logs, or source files.
+
 Optional environment variables:
 
 ```text
 ALIMAIL_SMTP_HOST=smtp.qiye.aliyun.com
 ALIMAIL_SMTP_PORT=465
-ALIMAIL_FROM_NAME=<sender display name>
-ALIMAIL_DEFAULT_TO=<default recipient list>
-ALIMAIL_DEFAULT_CC=<default cc list>
-ALIMAIL_DEFAULT_BCC=<default bcc list>
 ```
-
-When these values are not configured, prompt the user to set them locally. Do not ask the user to paste `ALIMAIL_SMTP_PASSWORD` into chat.
 
 Command pattern after the user confirms sending:
 
@@ -171,6 +171,7 @@ If `date_range` is absent, compute the current workweek from the local date: Mon
 - `references/dashboard-chart-source.md`: Feishu Base source and counting rules for the generated weekly dashboard chart.
 - `references/draft-policy.md`: safety rules for producing copy-ready email templates without sending mail.
 - `references/smtp-send-policy.md`: Aliyun Enterprise Mail SMTP setup and confirmation rules.
+- `references/local-smtp-defaults.md`: optional local-only non-secret SMTP defaults for this machine; do not publish this file.
 - `scripts/render_weekly_report.py`: render normalized weekly report JSON into a subject and HTML email body.
 - `scripts/generate_weekly_dashboard_svg.py`: generate the weekly dashboard SVG from normalized metrics and chart counts.
 - `scripts/send_weekly_report_smtp.py`: send a rendered weekly report through Aliyun Enterprise Mail SMTP after explicit confirmation.

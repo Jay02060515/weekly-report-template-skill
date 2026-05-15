@@ -81,19 +81,34 @@ class RenderWeeklyReportTest(unittest.TestCase):
 
         self.assertIn("<p>图片位置</p>", result["html_body"])
         escaped_url = url.replace("&", "&amp;")
-        self.assertIn(f'<a href="{escaped_url}">{escaped_url}</a>', result["html_body"])
+        self.assertIn(f'href="{escaped_url}"', result["html_body"])
+        self.assertIn("查看详细数据", result["html_body"])
         self.assertIn("图片: 图片位置", result["text_preview"])
 
-    def test_renders_generated_dashboard_chart_before_placeholder(self) -> None:
+    def test_renders_generated_dashboard_as_html_before_placeholder(self) -> None:
         result = render_weekly_report.render(
             {
                 "date_range": "2026/05/11 ~ 2026/05/15",
                 "image_placeholder": "图片位置",
-                "dashboard_chart": {"path": "./weekly-dashboard.svg", "alt": "看板图"},
+                "overall_summary": {
+                    "total_tickets": 36,
+                    "pass_through_rate": "5.56%",
+                    "ticket_platform_count": 8,
+                },
+                "dashboard_chart": {
+                    "path": "./weekly-dashboard.svg",
+                    "alt": "看板图",
+                    "pending_count": 6,
+                    "closed_count": 30,
+                    "issue_type_counts": [{"label": "监控器", "count": 8}],
+                    "feishu_project_counts": [{"label": "指标", "count": 2}],
+                },
             }
         )
 
-        self.assertIn('<img src="./weekly-dashboard.svg" alt="看板图"', result["html_body"])
+        self.assertIn("本周 CSM 处理各类问题工单数", result["html_body"])
+        self.assertIn("本周提交飞书项目数", result["html_body"])
+        self.assertNotIn('<img src="./weekly-dashboard.svg"', result["html_body"])
         self.assertNotIn("<p>图片位置</p>", result["html_body"])
         self.assertIn("图表: ./weekly-dashboard.svg", result["text_preview"])
 

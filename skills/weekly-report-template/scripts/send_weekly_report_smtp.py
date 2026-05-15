@@ -8,6 +8,7 @@ import html.parser
 import json
 import os
 import smtplib
+import subprocess
 import sys
 from email.header import Header
 from email import encoders
@@ -19,6 +20,15 @@ from pathlib import Path
 from typing import Any
 
 import render_weekly_report
+
+
+LOCAL_DEFAULTS_PATH = Path(__file__).resolve().parents[1] / "references" / "local-smtp-defaults.md"
+
+
+def text(value: Any, default: str = "") -> str:
+    if value is None:
+        return default
+    return str(value).strip()
 
 
 class HTMLToText(html.parser.HTMLParser):
@@ -60,6 +70,31 @@ def env_addresses(name: str) -> list[str]:
     return split_addresses([value]) if value else []
 
 
+def load_local_defaults(path: Path = LOCAL_DEFAULTS_PATH) -> dict[str, str]:
+    if not path.exists():
+        return {}
+    defaults: dict[str, str] = {}
+    for line in path.read_text(encoding="utf-8").splitlines():
+        stripped = line.strip()
+        if not stripped.startswith("export ") or "=" not in stripped:
+            continue
+        name, raw_value = stripped[len("export ") :].split("=", 1)
+        name = name.strip()
+        value = raw_value.strip().strip("\"'")
+        if name.startswith("ALIMAIL_"):
+            defaults[name] = value
+    return defaults
+
+
+def config_value(name: str, defaults: dict[str, str], fallback: str = "") -> str:
+    return os.environ.get(name, "").strip() or defaults.get(name, "").strip() or fallback
+
+
+def config_addresses(name: str, defaults: dict[str, str]) -> list[str]:
+    value = config_value(name, defaults)
+    return split_addresses([value]) if value else []
+
+
 def load_payload(path: str) -> dict[str, Any]:
     raw = sys.stdin.read() if path == "-" else Path(path).read_text(encoding="utf-8")
     payload = json.loads(raw)
@@ -74,10 +109,37 @@ def html_to_text(html_body: str) -> str:
     return parser.text()
 
 
-def require_env(name: str) -> str:
-    value = os.environ.get(name, "").strip()
+def keychain_password() -> str:
+    service = os.environ.get("ALIMAIL_KEYCHAIN_SERVICE", "ALIMAIL_SMTP_PASSWORD").strip()
+    account = os.environ.get("ALIMAIL_KEYCHAIN_ACCOUNT", os.environ.get("USER", "")).strip()
+    if not service or not account:
+        return ""
+    try:
+        result = subprocess.run(
+            ["security", "find-generic-password", "-a", account, "-s", service, "-w"],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+    except FileNotFoundError:
+        return ""
+    return result.stdout.strip() if result.returncode == 0 else ""
+
+
+def require_config(name: str, defaults: dict[str, str]) -> str:
+    value = config_value(name, defaults)
     if not value:
         raise SystemExit(f"Missing required environment variable: {name}")
+    return value
+
+
+def require_smtp_password() -> str:
+    value = os.environ.get("ALIMAIL_SMTP_PASSWORD", "").strip() or keychain_password()
+    if not value:
+        raise SystemExit(
+            "Missing SMTP password. Set ALIMAIL_SMTP_PASSWORD or store it in macOS Keychain "
+            "with service ALIMAIL_SMTP_PASSWORD."
+        )
     return value
 
 
@@ -125,7 +187,10 @@ def inline_chart_files(payload: dict[str, Any], html_body: str, base_dir: Path) 
     if not path.is_absolute():
         path = base_dir / path
     cid = "weekly-dashboard-chart"
-    updated = html_body.replace(f'src="{html.escape(path_text, quote=True)}"', f'src="cid:{cid}"')
+    source = f'src="{html.escape(path_text, quote=True)}"'
+    if source not in html_body:
+        return html_body, []
+    updated = html_body.replace(source, f'src="cid:{cid}"')
     return updated, [(path, cid)]
 
 
@@ -136,13 +201,14 @@ def main() -> int:
     parser.add_argument("--cc", action="append", help="CC address; repeat or comma-separate. Defaults to ALIMAIL_DEFAULT_CC.")
     parser.add_argument("--bcc", action="append", help="BCC address; repeat or comma-separate. Defaults to ALIMAIL_DEFAULT_BCC.")
     parser.add_argument("--subject", help="Override rendered subject")
-    parser.add_argument("--from-name", default=os.environ.get("ALIMAIL_FROM_NAME", ""), help="Optional sender display name. Defaults to ALIMAIL_FROM_NAME.")
+    parser.add_argument("--from-name", help="Optional sender display name. Defaults to ALIMAIL_FROM_NAME.")
     parser.add_argument("--confirm-send", action="store_true", help="Actually send. Without this flag, only print a dry-run summary.")
     args = parser.parse_args()
 
-    to = split_addresses(args.to) or env_addresses("ALIMAIL_DEFAULT_TO")
-    cc = split_addresses(args.cc) or env_addresses("ALIMAIL_DEFAULT_CC")
-    bcc = split_addresses(args.bcc) or env_addresses("ALIMAIL_DEFAULT_BCC")
+    defaults = load_local_defaults()
+    to = split_addresses(args.to) or config_addresses("ALIMAIL_DEFAULT_TO", defaults)
+    cc = split_addresses(args.cc) or config_addresses("ALIMAIL_DEFAULT_CC", defaults)
+    bcc = split_addresses(args.bcc) or config_addresses("ALIMAIL_DEFAULT_BCC", defaults)
     if not to:
         raise SystemExit("At least one --to recipient is required.")
 
@@ -152,7 +218,10 @@ def main() -> int:
     subject = args.subject or rendered["subject"]
     html_body = rendered["html_body"]
     html_body, inline_files = inline_chart_files(payload, html_body, payload_base_dir)
-    smtp_user = require_env("ALIMAIL_SMTP_USER")
+    smtp_user = require_config("ALIMAIL_SMTP_USER", defaults)
+    from_name = args.from_name if args.from_name is not None else config_value("ALIMAIL_FROM_NAME", defaults)
+    host = config_value("ALIMAIL_SMTP_HOST", defaults, "smtp.qiye.aliyun.com")
+    port = int(config_value("ALIMAIL_SMTP_PORT", defaults, "465"))
 
     summary = {
         "to": to,
@@ -160,8 +229,8 @@ def main() -> int:
         "bcc": bcc,
         "subject": subject,
         "smtp_user": smtp_user,
-        "host": os.environ.get("ALIMAIL_SMTP_HOST", "smtp.qiye.aliyun.com"),
-        "port": int(os.environ.get("ALIMAIL_SMTP_PORT", "465")),
+        "host": host,
+        "port": port,
         "text_preview": rendered.get("text_preview", ""),
         "inline_files": [str(path) for path, _ in inline_files],
         "sent": False,
@@ -171,10 +240,10 @@ def main() -> int:
         print(json.dumps(summary, ensure_ascii=False, indent=2))
         return 0
 
-    smtp_password = require_env("ALIMAIL_SMTP_PASSWORD")
+    smtp_password = require_smtp_password()
     message = build_message(
         smtp_user=smtp_user,
-        from_name=args.from_name,
+        from_name=from_name,
         to=to,
         cc=cc,
         subject=subject,
