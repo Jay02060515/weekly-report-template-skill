@@ -15,7 +15,7 @@ from email import encoders
 from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from email.utils import formataddr
+from email.utils import formataddr, formatdate, make_msgid
 from pathlib import Path
 from typing import Any
 
@@ -157,6 +157,8 @@ def build_message(
     message["Subject"] = str(Header(subject, "utf-8"))
     message["From"] = formataddr((str(Header(from_name, "utf-8")), smtp_user)) if from_name else smtp_user
     message["To"] = ", ".join(to)
+    message["Date"] = formatdate(localtime=True)
+    message["Message-ID"] = make_msgid(domain=smtp_user.split("@", 1)[-1])
     if cc:
         message["Cc"] = ", ".join(cc)
     alternative = MIMEMultipart("alternative")
@@ -253,9 +255,10 @@ def main() -> int:
     recipients = to + cc + bcc
     with smtplib.SMTP_SSL(summary["host"], summary["port"], timeout=20) as client:
         client.login(smtp_user, smtp_password)
-        client.sendmail(smtp_user, recipients, message.as_string())
+        refused = client.sendmail(smtp_user, recipients, message.as_string())
 
     summary["sent"] = True
+    summary["refused_recipients"] = refused if isinstance(refused, dict) else str(refused)
     print(json.dumps(summary, ensure_ascii=False, indent=2))
     return 0
 

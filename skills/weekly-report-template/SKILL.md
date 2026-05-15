@@ -17,6 +17,32 @@ Optional SMTP sending is allowed only when the user explicitly asks to send and 
 
 If the user asks to automate this workflow on a schedule, configure the automation to generate the weekly report template and report the content details by default. Configure scheduled SMTP sending only if the user explicitly asks for unattended sending and has already confirmed recipients, subject pattern, send policy, and credential setup.
 
+## First-Run Defaults
+
+When the user asks to send and no local defaults are available, collect the non-secret sending defaults before sending:
+
+- `ALIMAIL_SMTP_USER`: sender email account.
+- `ALIMAIL_DEFAULT_TO`: To recipients, comma-separated when multiple.
+- `ALIMAIL_DEFAULT_CC`: CC recipients, optional.
+- `ALIMAIL_DEFAULT_BCC`: BCC recipients, optional.
+- `ALIMAIL_FROM_NAME`: sender display name, optional.
+
+After collecting these values, ask whether to save them as this machine's defaults. If the user agrees, create or update `references/local-smtp-defaults.md` in the installed skill directory with only those non-secret `export ...` lines. Never write `ALIMAIL_SMTP_PASSWORD` there. This file is local-only and ignored by git.
+
+For password setup, guide the user to store the Aliyun Enterprise Mail third-party client security password in macOS Keychain:
+
+```bash
+security add-generic-password -a "$USER" -s "ALIMAIL_SMTP_PASSWORD" -w
+```
+
+Tell the user that the terminal will not echo the password. To verify without printing it:
+
+```bash
+security find-generic-password -a "$USER" -s "ALIMAIL_SMTP_PASSWORD" >/dev/null && echo "已保存"
+```
+
+Once defaults and Keychain are configured, the standard flow is: generate the current workweek report from the default Feishu data sources, show the complete template with To/CC/BCC/subject, then send only after the user explicitly confirms.
+
 ## Workflow
 
 1. Clarify missing run inputs:
@@ -32,7 +58,7 @@ If the user asks to automate this workflow on a schedule, configure the automati
 6. Map source columns to the normalized weekly report model in `references/sheet-contract.md`, `references/overall-summary-source.md`, `references/priority-issues-source.md`, and `references/dashboard-chart-source.md`. If headers differ, infer obvious mappings and state assumptions; ask only when ambiguous fields would change recipients, scope, or meaning.
 7. Build a normalized JSON payload and render the email with `scripts/render_weekly_report.py`. Include `dashboard_chart.path` so the generated chart is embedded in the report body.
 8. Return the rendered template. Include the subject, copy-ready body, generated dashboard chart path when one was generated, detail-data link/CTA, and a concise preview. Mention any missing rows, unmapped fields, or assumptions.
-9. If the user explicitly asks to send by SMTP, first show To, CC, BCC when present, subject, and a concise body preview. After the user confirms, call `scripts/send_weekly_report_smtp.py` with `--confirm-send`.
+9. If the user explicitly asks to send by SMTP, first resolve To/CC/BCC from explicit request, local defaults, or first-run prompts. Ask whether to save newly provided non-secret recipients/sender as defaults. Then show To, CC, BCC when present, subject, and a concise body preview. After the user confirms, call `scripts/send_weekly_report_smtp.py` with `--confirm-send`.
 
 ## Email Template Output
 
@@ -49,7 +75,7 @@ Rules:
 
 Read `references/smtp-send-policy.md` before sending.
 
-For local installations that provide `references/local-smtp-defaults.md`, read it for default non-secret sender and recipient values. This file is local-only and must not be published. Use those local defaults when the user asks for the standard weekly report without specifying recipients. For this machine, the standard flow is: generate the current workweek report from the default Feishu data sources, show the complete template with the default To/CC/BCC values, and send only after the user explicitly confirms.
+For local installations that provide `references/local-smtp-defaults.md`, read it for default non-secret sender and recipient values. This file is local-only and must not be published. Use those local defaults when the user asks for the standard weekly report without specifying recipients. If the file is missing and the user wants to send, prompt for sender, To, CC, BCC, and display name, then ask whether to save them as defaults for next time.
 
 Required environment variables:
 

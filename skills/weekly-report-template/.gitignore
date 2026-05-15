@@ -5,3 +5,4 @@ scripts/__pycache__/
 weekly-dashboard.png
 weekly-dashboard.svg
 artifacts/
+references/local-smtp-defaults.md

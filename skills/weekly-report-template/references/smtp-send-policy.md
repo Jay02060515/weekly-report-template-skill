@@ -4,28 +4,55 @@ Use this reference only when the user explicitly asks to send the rendered weekl
 
 ## Required User Setup
 
-The user must configure SMTP credentials locally before sending. Prefer storing the password once in macOS Keychain:
+The user must configure SMTP credentials locally before sending. Non-secret sender and recipient defaults may be saved locally; SMTP password must not be saved in files.
+
+## Sender And Recipient Defaults
+
+If `references/local-smtp-defaults.md` is missing and the user asks to send, ask for:
+
+- sender email account (`ALIMAIL_SMTP_USER`)
+- To recipients (`ALIMAIL_DEFAULT_TO`)
+- CC recipients (`ALIMAIL_DEFAULT_CC`, optional)
+- BCC recipients (`ALIMAIL_DEFAULT_BCC`, optional)
+- sender display name (`ALIMAIL_FROM_NAME`, optional)
+
+Then ask whether to save these values as defaults for next time. If the user says yes, create `references/local-smtp-defaults.md` in the installed skill directory:
+
+```bash
+export ALIMAIL_SMTP_USER="user@example.com"
+export ALIMAIL_DEFAULT_TO="recipient@example.com"
+export ALIMAIL_DEFAULT_CC="cc@example.com"
+export ALIMAIL_DEFAULT_BCC=""
+export ALIMAIL_FROM_NAME="客户服务周报"
+```
+
+This file is local-only and ignored by git. Do not include `ALIMAIL_SMTP_PASSWORD`.
+
+## Password Setup
+
+Prefer storing the Aliyun Enterprise Mail third-party client security password once in macOS Keychain:
 
 ```bash
 security add-generic-password -a "$USER" -s "ALIMAIL_SMTP_PASSWORD" -w
 ```
 
-The script uses `ALIMAIL_SMTP_PASSWORD` from the environment first, then falls back to this Keychain item. Shell environment variables are also supported:
+The terminal will not echo the password. Verify availability without printing it:
 
 ```bash
-export ALIMAIL_SMTP_USER="user@example.com"
+security find-generic-password -a "$USER" -s "ALIMAIL_SMTP_PASSWORD" >/dev/null && echo "已保存"
+```
+
+The script uses `ALIMAIL_SMTP_PASSWORD` from the environment first, then falls back to this Keychain item. Shell environment variables are also supported for temporary use:
+
+```bash
 export ALIMAIL_SMTP_PASSWORD="third-party-client-security-password"
 ```
 
-Optional overrides:
+Optional SMTP overrides:
 
 ```bash
 export ALIMAIL_SMTP_HOST="smtp.qiye.aliyun.com"
 export ALIMAIL_SMTP_PORT="465"
-export ALIMAIL_FROM_NAME="客户服务周报"
-export ALIMAIL_DEFAULT_TO="recipient@example.com"
-export ALIMAIL_DEFAULT_CC="cc@example.com"
-export ALIMAIL_DEFAULT_BCC=""
 ```
 
 Use `smtp.qiye.aliyun.com` with SSL port `465` by default. Do not use port `25` for this skill.
